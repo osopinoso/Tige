@@ -1,0 +1,98 @@
+
+
+## Loading and preprocessing the data
+First load the data 
+```{r}
+Data <- read.csv("activity.csv")
+
+```
+
+
+## What is mean total number of steps taken per day?
+1. Use of the aggregate function
+```{r}
+
+```
+
+
+The total number of steps taken per day was calculated by using aggregate function. We report the mean and the median also. 
+```{r}
+steps.date <- aggregate(steps ~ date, data=Data, FUN=sum)
+
+mean(steps.date$steps)
+median(steps.date$steps)
+
+```
+Histogram of the total number of steps taken each day
+```{r}
+hist(steps.date$steps, xlab="Total number  steps per day", main=NULL, col="blue")
+```
+
+## What is the average daily activity pattern?
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis).
+We're going to use the aggregate function again.
+
+```{r}
+steps.interval <- aggregate(steps ~ interval, data=Data, FUN=mean)
+plot(steps.interval, type="l")
+
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+steps.interval$interval[which.max(steps.interval$steps)]
+```
+
+
+## Imputing missing values
+
+Number of missing values
+
+```{r}
+dim(Data[is.na(Data$steps),])[1]
+```
+
+Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+```{r}
+Data1 <- merge(Data, steps.interval, by="interval", suffixes=c("",".y"))
+missing <- is.na(Data$steps)
+Data1$steps[missing] <- Data1$steps.y[missing]
+Data1 <- Data1[,c(1:3)]
+```
+```{r}
+steps.date <- aggregate(steps ~ date, data=Data1, FUN=sum)
+barplot(steps.date$steps, names.arg=steps.date$date, xlab="date", ylab="steps")
+mean(steps.date$steps)
+median(steps.date$steps)
+
+```
+
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+```{r}
+dtype <- function(date) {
+    if (weekdays(as.Date(date)) %in% c("sábado", "domingo")) {
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+Data1$dtype <- as.factor(sapply(Data1$date, dtype))
+```
+
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+
+```{r}
+par(mfrow=c(2,1))
+for (type in c("weekend", "weekday")) {
+    steps.type <- aggregate(steps ~ interval,
+                            data=Data1,
+                            subset=Data1$dtype==type,
+                            FUN=mean)
+    plot(steps.type, type="l", main=type)
+}
+```
+
